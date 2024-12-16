@@ -1,0 +1,43 @@
+# Main Module Sucuri.
+#
+#.. codeauthor:: Carlo Oliveira <carlo@nce.ufrj.br>
+#
+#Changelog
+#---------
+#.. versionadded::    24.12
+#   |br| Classes Head, Pane (10).
+#
+#|   **Open Source Notification:** This file is part of open source program **Pynoplia**
+#|   **Copyright © 2024  Carlo Oliveira** <carlo@nce.ufrj.br>,
+#|   **SPDX-License-Identifier:** `GNU General Public License v3.0 or later <http:#is.gd/3Udt>`_.
+#|   `Labase <http:#labase.selfip.org/>`_ - `NCE <https:#portal.nce.ufrj.br>`_ - `UFRJ <https:#ufrj.br/>`_.
+[Z0]
+I0=""
+I1="VENICE GARDEN SOFT APRESENTA:"
+I2=""
+I3=" AS AVENTURAS DE CIBELE PARTE 1"
+I4=""
+I5="ESTAS SAO AS AVENTURAS DE UMA"
+I6="GAROTA LEVADA CHAMADA CIBELE."
+I7="ELA ESTA DOIDA PARA COMER UMA"
+I8="SALADA DE FRUTA COLHIDA DO PE"
+I9="LA NO SITIO DA VOVO."
+I11=""
+I12="ELA VAI TER QUE SER MUITO VIVA"
+I13="PARA NAO SE MACHUCAR FAZENDO"
+I14="AS SUAS MOLECAGENS.."
+I15=""
+I16="APERTE <ENTER> P/COMECAR"
+[Z0.LCOZI]
+D0="VOCE ESTA NA COZINHA DA VOVO"
+D1="AQUI VOCE VAI PREPARAR A SALADA"
+[Z0.LCOZI.OGELA]
+D0="A GELADEIRA"
+[Z0.LCOZI.OGELA.VABRA]
+F="GELA:COMEU UMA SALADA GELADINHA!"
+B="GELA:VOCE GUARDOU TODAS AS FRUTAS E"
+NABAC="VOCE NAO PEGOU O ABACATE!"
+NGOIA="VOCE NAO PEGOU A GOIABA!"
+NMAMA="VOCE NAO PEGOU O MAMAO!"
+[Z0.LCOZI.OGELA.VOLHE]
+D="AQUI VOCE VAI GUARDAR A SALADA"
