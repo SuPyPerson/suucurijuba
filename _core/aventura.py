@@ -18,6 +18,101 @@ Changelog
 """
 
 
+class UmaCoisa:
+    MSC = None
+    def __init__(self, name, dono):
+        self.name = name
+        self.dono = dono
+
+    def parse(self, data, owner=None, container=None):
+        print("d",self.dono, self
+              ,"o",owner,"xx")
+        # self.dono.container[self.name].append(self)
+        # self.dono.container[self.name]=data
+        match data:
+            case str() as var:
+                # print(data)
+                _ = var
+                # container.append({self.name: data})
+                container.append(data)
+
+                return data
+        # container.append({self.name: data})
+        self.do_parse(data, owner, container)
+        return "__NOT_PARSED__"
+
+    def do_parse(self, data, owner, container):
+        pass
+
+
+class Coisa(UmaCoisa):
+    def __init__(self, name, dono):
+        super().__init__(name, dono)
+        print("co",self.name, self.dono)
+        self.name = name
+        self.container = {self.name: []}
+        # self.stack = dono.stack
+        self.care_hub = self.MSC.care_hub
+
+    def do_parse(self, data, owner, container):
+        container.append(self.container)
+        cont = self.container[self.name]
+        [self.care_hub[key.lower()[0]](key, self).parse(value, key, cont)
+         for key, value in data.items()]
+        # self.parse(data)
+
+
+class Zona(Coisa):
+    pass
+
+class Inicio(UmaCoisa):
+    pass
+
+
+class Local(Coisa):
+    pass
+
+
+class Objeto(Coisa):
+    pass
+
+
+class Verbo(Coisa):
+    pass
+
+
+class Outro(UmaCoisa):
+    pass
+
+
+class Head(Coisa):
+    def __init__(self, name, dono):
+        names = "zilovdfbn"
+        classes = [Zona, Inicio, Local, Objeto, Verbo, Outro, Outro, Outro, Outro, Outro]
+        self.care_hub = {key: value for key, value in zip(names, classes)}
+        UmaCoisa.MSC = self
+        super().__init__("__MAIN__", self)
+        self.container = []  # {"__MAIN__":[]}
+        self.care_hub = {key: value for key, value in zip(names, classes)}
+        print("__MAIN__BEF", self.container)
+        # return
+        import tomllib
+        with open("adv.toml", "rb") as f:
+            data = tomllib.load(f)
+            self.parse(data, "__MAIN__", self.container)
+        print("__MAIN__", self.container) #, self.container[self])
+        [print(it) for it in self.container]
+
+    def do_parse(self, data, owner, container):
+        container.append(self.container)
+        cont = self.container
+        [self.care_hub[key.lower()[0]](key, self).parse(value, key, cont)
+         for key, value in data.items()]
+        # self.parse(data)
+
+"""
+
+
 class Head:
     def __init__(self):
         import tomllib
@@ -115,11 +210,11 @@ class Head:
 
     def negou(self, data):
         self.container.append(data)
-
+"""
 
 def main():
     """Main function."""
-    Head()
+    Head("HEAD", {})
 
 
 if __name__ == '__main__':
