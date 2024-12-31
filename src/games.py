@@ -3,6 +3,7 @@
 Classes neste módulo:
     - :py:class:`Game` A game for guessing a word.
     - :py:class:`Tux` A game for typing practice.
+    - :py:class:`Cux` A game to join three or more figures.
     - :py:class:`WpCurses` A wrapper for the curses library.
 
 .. codeauthor:: Carlo Oliveira <carlo@nce.ufrj.br>
@@ -12,6 +13,7 @@ Changelog
 .. versionadded::    24.12
    |br| Classes Game (20).
    |br| Classes Tux and WpCurses (30).
+   |br| Classes Cux (31).
 
 |   **Open Source Notification:** This file is part of open source program **Suucurijuba**
 |   **Copyright © 2024  Carlo Oliveira** <carlo@nce.ufrj.br>,
@@ -177,6 +179,105 @@ class Tux:
         print("Volte sempre para salvar o planeta...")
 
 
+class Cux:
+    """Imita o jogo tipo Candy Crush"""
+    DY, DX, DR, WX, WY, WW, WC, MX = 21, 12, 20, 10, 20, 70, 5, 6
+
+    def __init__(self, gui):
+        from re import compile
+        self.pattern = compile("AAA+|EEE+|III+|OOO+|UUU+")
+        self.run_cux = self.cux
+        self.pontos = 0
+        estoque = []
+        _ = [estoque.extend([kind]*3) for kind in "AEIOU"]
+        self.estoque = "".join(estoque)
+        self.pilhas = self.cria_pilhas()
+        self.letras = ""  # conjunto de letras já tentadas
+        self.movidos = 0  # número de meteoros nesta leva
+        self.altura = Cux.WY - 2
+        self.gui = gui
+        self.gui.window(Cux.WY, Cux.WW, 0, Cux.WC)
+        self.display = self.gui.window(3, Cux.WW, Cux.DR, Cux.WC)
+        self.oxy = []
+        for _ in range(190):
+            self.pilhas = self.cria_pilhas()
+            self.oxy = self.verificar(self.pilhas)
+            if len(self.oxy) <= 0:
+                break
+        # self.atualiza(" ".join(f"{a}{b}" for a, b in self.oxy))
+        self.atualiza("Escreva uma sequencia seguida de + o -")
+        self.cux()
+        # executa o início do tux typing
+
+    def cria_pilhas(self):
+        from random import sample
+        return ["".join(sample(self.estoque, 10)) for _ in range(10)]
+
+    def cux(self):
+        self.gui.going(self.move, lambda *_: self.run_cux())
+
+    def atualiza(self, palavra, limpa=None):
+        ilhas = zip(*self.pilhas)
+        [self.gui.write(5+row, Cux.DX, letras) for row, letras in enumerate(self.pilhas)]
+        [self.gui.write(5+row, Cux.DX+14, "".join(letras)) for row, letras in enumerate(ilhas)]
+        self.gui.write(Cux.DY, Cux.MX+12, f" "*49)
+        self.gui.write(Cux.DY, Cux.MX+12, f"{palavra}")
+        self.gui.write(Cux.DY, Cux.MX, f"M:{self.movidos:3}")
+        self.gui.write(Cux.DY, Cux.MX+4, f"P:{self.pontos:04}")
+        return limpa is None
+
+    def verificar(self, pilhas):
+        rx = [(mx.start(), mx.end()) for mx in self.pattern.finditer(" ".join(pilhas))]
+        pilhas = ["".join(letras) for letras in zip(*pilhas)]
+        ry = [(mx.start(), mx.end()) for mx in self.pattern.finditer(" ".join(pilhas))]
+        rmv = [(x//11, x % 11) for rgx in ry for x in range(*rgx)]
+        rmv += [(x % 11, x // 11) for rgx in rx for x in range(*rgx)]
+        rmv = list(set(rmv))
+        rmv = sorted(rmv)
+        return rmv
+
+    def remove(self, hits):
+        from random import sample
+        pilhas = [sample(self.estoque, 10)+list(letras) for letras in zip(*self.pilhas)]
+        [pilhas[col].pop(row-10) for col, row in hits]
+        pilhas = [col[-10:] for col in pilhas]
+        self.pilhas = ["".join(letras) for letras in zip(*pilhas)]
+
+    def move(self, k):
+        def fim(texto=f"Fim do Jogo, você desistiu"):
+            self.run_cux = lambda *_: self.gui.ender(self.ender)
+            return self.atualiza(texto, limpa)
+        limpa = " " * 61
+        if chr(k) in "0":
+            return fim()
+
+        lk = chr(k)
+        if lk not in "+-=":
+            self.letras += lk.upper()
+            self.atualiza(self.letras)
+            return True
+        string = " ".join(self.pilhas)
+        ix = string.find(self.letras)
+        if ix > -1:
+            self.movidos += 1
+            ix += 0 if lk in "-" else len(self.letras)-2
+            string = list(string)
+            string[ix], string[ix+1] = string[ix+1], string[ix]
+            string = "".join(string)
+            self.pilhas = [row for row in string.split()]
+            self.letras = ""
+            while oxy := self.verificar(self.pilhas):
+                self.pontos += len(oxy)
+                self.remove(oxy) if oxy else None
+            self.atualiza(" ".join(f"{a}{b}" for a, b in oxy))
+        self.letras = ""
+        self.atualiza(self.letras)
+        return True
+
+    def ender(self, *_):
+        print("Volte sempre para salvar o planeta...")
+
+
 PAL = """Axioma
 Azulejo
 Blitz
@@ -207,4 +308,5 @@ Xilofone"""
 if __name__ == '__main__':
     """Esta fórmula é chavão em python para só executar se for main e não se for importado"""
     # game = Game()
-    tux = Tux(WpCurses())
+    # tux = Tux(WpCurses())
+    tux = Cux(WpCurses())
