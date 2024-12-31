@@ -11,9 +11,10 @@ Classes neste módulo:
 Changelog
 ---------
 .. versionadded::    24.12
-   |br| Classes Game (20).
+   |br| Classe Game (20).
    |br| Classes Tux and WpCurses (30).
-   |br| Classes Cux (31).
+   |br| Classe Cux (31).
+   |br| Aprimora e documenta a Classe Cux (31).
 
 |   **Open Source Notification:** This file is part of open source program **Suucurijuba**
 |   **Copyright © 2024  Carlo Oliveira** <carlo@nce.ufrj.br>,
@@ -182,94 +183,146 @@ class Tux:
 class Cux:
     """Imita o jogo tipo Candy Crush"""
     DY, DX, DR, WX, WY, WW, WC, MX = 21, 12, 20, 10, 20, 70, 5, 6
+    CW, MM, MP, DZ, DC = 10, MX+12, MX+5, 11, DX+14
+    MAX_COUNT = 190
 
     def __init__(self, gui):
         from re import compile
         self.pattern = compile("AAA+|EEE+|III+|OOO+|UUU+")
-        self.run_cux = self.cux
+        self.num = "-0123456789\n"  # para testar letras quando forem coordenadas
+        self.run_cux = self.cux  # run_cux vai inicialmente ser cux
         self.pontos = 0
-        estoque = []
-        _ = [estoque.extend([kind]*3) for kind in "AEIOU"]
-        self.estoque = "".join(estoque)
+        self.estoque = "".join([kind for _ in range(3) for kind in "AEIOU"])
         self.pilhas = self.cria_pilhas()
-        self.letras = ""  # conjunto de letras já tentadas
-        self.movidos = 0  # número de meteoros nesta leva
-        self.altura = Cux.WY - 2
+        self.letras = ""  # código para buscar as letras a serem movidas
+        self.movidos = 0  # número de letras movidas
         self.gui = gui
         self.gui.window(Cux.WY, Cux.WW, 0, Cux.WC)
         self.display = self.gui.window(3, Cux.WW, Cux.DR, Cux.WC)
-        self.oxy = []
-        for _ in range(190):
+        for _ in range(Cux.MAX_COUNT):
             self.pilhas = self.cria_pilhas()
-            self.oxy = self.verificar(self.pilhas)
-            if len(self.oxy) <= 0:
+            if not self.verificar(self.pilhas):
                 break
-        # self.atualiza(" ".join(f"{a}{b}" for a, b in self.oxy))
         self.atualiza("Escreva uma sequencia seguida de + o -")
-        self.cux()
-        # executa o início do tux typing
+        self.cux()  # executa o início do tux typing
 
     def cria_pilhas(self):
+        """
+        Cria as pilhas sorteando letras do estoque.
+        :return: Matriz de pilhas.
+        """
         from random import sample
-        return ["".join(sample(self.estoque, 10)) for _ in range(10)]
+        return ["".join(sample(self.estoque, Cux.CW)) for _ in range(Cux.CW)]
 
     def cux(self):
+        """Inicia o jogo do Cux. Usa o loop de chamada da GUI"""
         self.gui.going(self.move, lambda *_: self.run_cux())
 
-    def atualiza(self, palavra, limpa=None):
+    def atualiza(self, palavra, limpa=None) -> bool:
+        """ Atualiza a tela com a matriz e a matriz invertida.
+        :param limpa: Mensagem de saída do aplicativo.
+        :param palavra: Mensagem para imprimir na linha de display.
+        :return: True se não é mensagem final.
+        """
         ilhas = zip(*self.pilhas)
         [self.gui.write(5+row, Cux.DX, letras) for row, letras in enumerate(self.pilhas)]
-        [self.gui.write(5+row, Cux.DX+14, "".join(letras)) for row, letras in enumerate(ilhas)]
-        self.gui.write(Cux.DY, Cux.MX+12, f" "*49)
-        self.gui.write(Cux.DY, Cux.MX+12, f"{palavra}")
-        self.gui.write(Cux.DY, Cux.MX, f"M:{self.movidos:3}")
-        self.gui.write(Cux.DY, Cux.MX+4, f"P:{self.pontos:04}")
+        [self.gui.write(5+row, Cux.DC, "".join(letras)) for row, letras in enumerate(ilhas)]
+        self.gui.write(Cux.DY, Cux.MX, f"M:{self.movidos:3} P:{self.pontos:04} {palavra} {' '*(49-len(palavra))}")
         return limpa is None
 
-    def verificar(self, pilhas):
+    def verificar(self, pilhas) -> list:
+        """ Usa expressão regular para ver se tem três ou mais tipos iguais consecutivos.
+
+        :param pilhas: A matriz de palavras a verificar.
+        :return: Lista de pares individuais de letras pertencentes aos consecutivos.
+        """
         rx = [(mx.start(), mx.end()) for mx in self.pattern.finditer(" ".join(pilhas))]
+        """ Acha os marcadores de início e fim dos iguais consecutivos na horizontal."""
         pilhas = ["".join(letras) for letras in zip(*pilhas)]
+        """ Inverte a matriz de letras."""
         ry = [(mx.start(), mx.end()) for mx in self.pattern.finditer(" ".join(pilhas))]
-        rmv = [(x//11, x % 11) for rgx in ry for x in range(*rgx)]
-        rmv += [(x % 11, x // 11) for rgx in rx for x in range(*rgx)]
+        """ Acha os marcadores de início e fim dos iguais consecutivos na vertical."""
+        rmv = [(x//Cux.DZ, x % Cux.DZ) for rgx in ry for x in range(*rgx)]
+        rmv += [(x % Cux.DZ, x // Cux.DZ) for rgx in rx for x in range(*rgx)]
+        """ Expande as sequências em pares ordenados para cada letra participante."""
         rmv = list(set(rmv))
         rmv = sorted(rmv)
-        return rmv
+        return rmv  # retorna os pares em ordem crescente para que o pop funcione.
 
     def remove(self, hits):
+        """ Remove as letras que estão marcadas por pertencer a grupos de iguais.
+
+        :param hits: Coordenadas das letras a serem removidas.
+        :return: None
+        """
         from random import sample
-        pilhas = [sample(self.estoque, 10)+list(letras) for letras in zip(*self.pilhas)]
-        [pilhas[col].pop(row-10) for col, row in hits]
-        pilhas = [col[-10:] for col in pilhas]
+        pilhas = [sample(self.estoque, Cux.CW)+list(letras) for letras in zip(*self.pilhas)]
+        """Aumenta cada pilha para que novas letras sejam inseridas ao remover uma letra."""
+        [pilhas[col].pop(row-Cux.CW) for col, row in hits]
+        """ Remove e rotaciona a pilha para cada letra. Posição é contada a partir da direita"""
+        pilhas = [col[-Cux.CW:] for col in pilhas]
+        """ Recorta as pilhas no tamanho certo, removendo a pilha extra não rotacionada."""
         self.pilhas = ["".join(letras) for letras in zip(*pilhas)]
 
     def move(self, k):
+        """
+        Movimenta uma letra escolhida como um código de coordenada X.Y.(H, V)
+        ou como uma busca de uma string dentro das pilhas AEIOU(-, =).
+        O "-" indica que a primeira letra da busca é trocada e "=" a última letra.
+
+        :param k: Letra recebida do input do usuário.
+        :return: False se o usuário escolheu terminar, True se continua.
+        """
         def fim(texto=f"Fim do Jogo, você desistiu"):
+            """Executa a finalização da interface gráfica."""
             self.run_cux = lambda *_: self.gui.ender(self.ender)
             return self.atualiza(texto, limpa)
-        limpa = " " * 61
-        if chr(k) in "0":
-            return fim()
+        
+        def mover(ix_, string_):
+            """ Move uma letra da matriz indicada pelo índice.
 
-        lk = chr(k)
-        if lk not in "+-=":
-            self.letras += lk.upper()
-            self.atualiza(self.letras)
-            return True
-        string = " ".join(self.pilhas)
-        ix = string.find(self.letras)
-        if ix > -1:
+            :param ix_: Índice da letra que vai ser trocada com a próxima.
+            :param string_: Representa as matrizes de pilhas horizontais e verticais.
+            :return: None
+            """
             self.movidos += 1
-            ix += 0 if lk in "-" else len(self.letras)-2
-            string = list(string)
-            string[ix], string[ix+1] = string[ix+1], string[ix]
-            string = "".join(string)
-            self.pilhas = [row for row in string.split()]
-            self.letras = ""
+            ix_ += 0 if lk in self.num else len(self.letras) - 2
+            string_ = list(string_)
+            string_[ix_], string_[ix_ + 1] = string_[ix_ + 1], string_[ix_]
+            string_ = "".join(string_)
+            string_ = string_[:110] if ix_ < 110 else " ".join(
+                ["".join(letras) for letras in zip(*string_[110:].split())])
+            self.pilhas = [row for row in string_.split()]
             while oxy := self.verificar(self.pilhas):
                 self.pontos += len(oxy)
                 self.remove(oxy) if oxy else None
-            self.atualiza(" ".join(f"{a}{b}" for a, b in oxy))
+
+        END, GO, CODE, BAD, FOUND, SKIP = "END, GO, CODE, BAD, FOUND, SKIP".split(", ")
+        lk, lt, ix, limpa = chr(k), self.letras, -1, " " * 61
+        string = " ".join(self.pilhas) + " " + " ".join(["".join(letras) for letras in zip(*self.pilhas)])
+        """Concatena uma string com as linhas e outra com as colunas."""
+        st = CODE if (len(lt) == 5) and (lt[-2] == ".") else FOUND if (ix := string.find(self.letras)) > -1 else SKIP
+        """Diferencia os dois modos de especificar a letra que move. 0.0.0: CODE, AEIOU: FOUND"""
+        st = BAD if (st == CODE) and not (lt[0]+lt[2]+lt[4]).isnumeric() else st
+        """Valida o modo code que deve conter apenas algarismos."""
+        st = END if lk in "q" else GO if lk not in "+-=\n" else st
+        """Testa se termina ou continua."""
+
+        match st:
+            case "END":  # END
+                return fim()
+            case "GO" | "SKIP":  # GO
+                self.letras += lk.upper()
+                self.atualiza(self.letras)
+                return True
+            case "BAD":  # BAD
+                self.letras = ""
+                return True
+            case "CODE":  # CODE
+                ix = (lambda a, b, c: int(c)*110+int(a)*11 + int(b))(*self.letras.split("."))
+                mover(ix, string)
+            case "FOUND":  # FOUND
+                mover(ix, string)
         self.letras = ""
         self.atualiza(self.letras)
         return True
