@@ -72,7 +72,7 @@ from unicurses import noecho, cbreak, curs_set, keypad, start_color, init_pair, 
 class WpCurses:
     """Classe auxiliar para isolar a interface curses"""
     def __init__(self, hook=lambda *_: None) -> None:
-        self.hook = hook
+        self.hook, self.go = hook, False
         self.std_scr = initscr()
         noecho()
         cbreak()
@@ -82,6 +82,40 @@ class WpCurses:
         init_pair(1, COLOR_YELLOW, COLOR_BLACK)  # used for the status bar
         clear()
         refresh()
+
+    def set_interval(self, template, timing:float):
+        this=self
+        this.write(1, 77, "0")
+
+        class Interval:
+            def __init__(self):
+                self.template = template
+                self.timing = timing
+                self._timer = None
+                self.is_running = False
+                self.cnt = 1
+                self.start()
+
+            def _run(self):
+                self.is_running = False
+                this.write(1,77, f"{self.cnt}")
+                self.cnt += 1
+                # self.__enter__()
+                self.template(self)
+
+            def start(self):
+                from threading import Timer
+                if not self.is_running:
+                    self._timer = Timer(self.timing, self._run)
+                    self._timer.start()
+                    self.is_running = True
+                return self
+
+            def stop(self, exception_type, exception_value, exception_traceback):
+                # Exception handling here
+                self._timer.cancel()
+                self.is_running = False
+        return Interval()
 
     def window(self, height, width, row, col):
         win = newwin(height, width, row, col)
@@ -124,7 +158,7 @@ class Tux:
         self.palavras = PAL.split()  # lita de palavras
         self.letras = ""  # conjunto de letras já tentadas
         self.tentativas = Tux.WY  # número de mísseis disponíveis
-        self.palavra = None  # o nome do cometa que cai
+        self.palavra = self.disparo = None  # o nome do cometa que cai
         self.chuva = 10  # número de meteoros nesta leva
         self.altura = Tux.WY - 2
         self.gui = gui
@@ -146,8 +180,24 @@ class Tux:
             return True
         self.chuva -= 1
         self.atualiza(texto)
+        self.gui.set_interval(self.disparar,1)
         self.gui.going(self.atira, lambda *_: self.run_tux())
+
         return False
+
+    def disparar(self, timer):
+        altura = Tux.WY - self.altura-1
+        limpa = " " * 61
+        texto = limpa
+        self.gui.write(altura, Tux.WX, texto)
+        self.altura -= 1
+        altura = Tux.WY - self.altura-1
+        texto = f"{self.palavra} {self.altura}"
+        self.gui.write(altura, Tux.WX, texto)
+        if self.altura <= 0:
+            timer.stop(None, None, None)
+        if self.chuva >= 0:
+            timer.start()
 
     def atira(self, k):
         def fim(texto=f"Fim do Jogo, você desistiu"):
@@ -157,10 +207,10 @@ class Tux:
         if chr(k) in "0":
             return fim()
         self.atualiza(limpa, limpa)
-        self.altura -= 1
+        # self.altura -= 1
         if self.altura * self.tentativas == 0:
             return fim(f"Você perdeu, o meteoro {self.palavra} destruiu o planeta")
-        p = palavra = self.letras + chr(k)
+        self.disparo = p = palavra = self.letras + chr(k)
         vai = self.palavra.startswith(palavra)
         self.letras, palavra, self.tentativas = (p, p, self.tentativas) if vai else ("", limpa, self.tentativas-1)
         self.atualiza(palavra)
@@ -168,8 +218,9 @@ class Tux:
             return self.atualiza(limpa, limpa)
         return True
 
-    def atualiza(self, palavra, limpa=None):
+    def atualiza(self, palavra=None, limpa=None):
         altura = Tux.WY - self.altura-1
+        palavra = palavra or self.disparo
         texto = limpa if limpa else f"{self.palavra} {self.altura}"
         self.gui.write(Tux.DY, Tux.DX, f"{palavra}")
         self.gui.write(Tux.DY, Tux.MX, f"M:{self.tentativas:3}")
@@ -362,4 +413,4 @@ if __name__ == '__main__':
     """Esta fórmula é chavão em python para só executar se for main e não se for importado"""
     # game = Game()
     # tux = Tux(WpCurses())
-    tux = Cux(WpCurses())
+    tux = Tux(WpCurses())

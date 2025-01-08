@@ -62,6 +62,34 @@ class Head:
             my_worker.send(self.aumenta)
 
 
-def main(br, wk):
+def adder():
+
+    from browser import bind, document, worker
+    print("Create Worker")
+
+    result = document.select_one('.result')
+    inputs = document.select("input")
+
+    def onmessage(e):
+        """Handles the messages sent by the worker."""
+        result.text = e.data
+
+    def onready(myWorker):
+
+        @bind(inputs, "change")
+        def change(evt):
+            """Called when the value in one of the input fields changes."""
+            # Send a message (here a list of values) to the worker
+            print("Worker ready", [x.value for x in inputs])
+            myWorker.send([x.value for x in inputs])
+
+    # Create a web worker, identified by a script id in this page.
+    worker.create_worker("worker", onready, onmessage)
+    print(" Worker Created")
+
+
+
+def main(br=0, wk=0):
     """Main function."""
-    Head(br, wk)
+    # Head(br, wk)
+    adder()
