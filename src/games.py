@@ -362,4 +362,4 @@ if __name__ == '__main__':
     """Esta fórmula é chavão em python para só executar se for main e não se for importado"""
     # game = Game()
     # tux = Tux(WpCurses())
-    tux = Cux(WpCurses())
+    tux = Tux(WpCurses())
