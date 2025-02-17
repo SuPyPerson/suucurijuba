@@ -45,8 +45,8 @@ class Head:
             _ = node <= child
 
         window.docBasePath = "snct"
-        [append(st(src=hr)) for hr in self.SCT]
-        [append(ln(rel="stylesheet", href=hr)) for hr in self.STLIB]
+        # [append(st(src=hr)) for hr in self.SCT]
+        # [append(ln(rel="stylesheet", href=hr)) for hr in self.STLIB]
         # append(st(src="/_lib/main_index.js"), self.BODY)
         # self.scripter()
         # timer.set_timeout(self.scripter, 50)
