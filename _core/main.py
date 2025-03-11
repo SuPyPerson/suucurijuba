@@ -84,7 +84,7 @@ def adder():
             myWorker.send([x.value for x in inputs])
 
     # Create a web worker, identified by a script id in this page.
-    worker.create_worker("worker", onready, onmessage)
+    worker.create_worker("prime_worker", onready, onmessage)
     print(" Worker Created")
 
 
